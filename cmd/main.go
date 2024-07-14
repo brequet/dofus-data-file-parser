@@ -7,7 +7,9 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 
+	"github.com/brequet/dofus-data-file-parser/internal/generator"
 	"github.com/brequet/dofus-data-file-parser/internal/parser"
 )
 
@@ -106,6 +108,11 @@ func prepareOutputFolder(outputFolderPath string) error {
 		return fmt.Errorf("error creating common folder: %w", err)
 	}
 
+	err = os.Mkdir(filepath.Join(outputFolderPath, "go"), 0755)
+	if err != nil {
+		return fmt.Errorf("error creating common folder: %w", err)
+	}
+
 	err = os.Mkdir(filepath.Join(outputFolderPath, "translation"), 0755)
 	if err != nil {
 		return fmt.Errorf("error creating translation folder: %w", err)
@@ -119,6 +126,8 @@ func processCommonFolder(commonFolderPath, outputFolderPath string) error {
 	if err != nil {
 		return fmt.Errorf("error reading directory: %w", err)
 	}
+
+	classes := map[string]map[string]parser.Class{}
 
 	fileParsedCount := 0
 	for _, file := range files {
@@ -152,8 +161,45 @@ func processCommonFolder(commonFolderPath, outputFolderPath string) error {
 			slog.Error("error writing file", "error", err, "path", outputPath)
 		}
 		fileParsedCount++
+
+		for _, class := range data.Classes {
+			if classes[class.PackageName] == nil {
+				classes[class.PackageName] = map[string]parser.Class{}
+			}
+			classes[class.PackageName][class.PackageClass] = class
+		}
 	}
 	slog.Info("d2o files parsed", "count", fileParsedCount)
+
+	err = exportClassTypesToGolang(classes, outputFolderPath)
+	if err != nil {
+		slog.Error("error exporting class types to golang", "error", err)
+	}
+
+	return nil
+}
+
+func exportClassTypesToGolang(classes map[string]map[string]parser.Class, outputFolderPath string) error {
+	for packageName, classMap := range classes {
+
+		classList := make([]parser.Class, 0)
+		for _, class := range classMap {
+			classList = append(classList, class)
+		}
+
+		goFileContent, err := generator.GenerateGoFromClasses(classList)
+		if err != nil {
+			return fmt.Errorf("error generating golang from classes: %w", err)
+		}
+
+		fileName := packageName[strings.LastIndex(packageName, ".")+1:] + ".go"
+
+		goFilePath := filepath.Join(outputFolderPath, "go", fileName)
+		err = os.WriteFile(goFilePath, goFileContent, 0644)
+		if err != nil {
+			return fmt.Errorf("error writing file: %w", err)
+		}
+	}
 
 	return nil
 }

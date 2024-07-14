@@ -10,7 +10,7 @@ import (
 	"sort"
 )
 
-type Data struct {
+type D2oData struct {
 	Classes map[int]Class `json:"classes"`
 	Objects []Object      `json:"objects"`
 }
@@ -67,19 +67,19 @@ func (f FieldType) MarshalJSON() ([]byte, error) {
 	return json.Marshal(f.String())
 }
 
-func ProcessD2oFile(d2oFilePath string) (Data, error) {
+func ProcessD2oFile(d2oFilePath string) (D2oData, error) {
 	// See GameDataFileAccessor.as
 	slog.Debug("processing D2O file", "file", d2oFilePath)
 
 	fileContentBytes, err := os.ReadFile(d2oFilePath)
 	if err != nil {
-		return Data{}, fmt.Errorf("error reading file: %w", err)
+		return D2oData{}, fmt.Errorf("error reading file: %w", err)
 	}
 
 	dataInput := NewDataInput(fileContentBytes)
 	header := string(dataInput.Read(3))
 	if header != "D2O" {
-		return Data{}, fmt.Errorf("invalid header: %s", header)
+		return D2oData{}, fmt.Errorf("invalid header: %s", header)
 	}
 
 	indexesPointer := dataInput.ReadInt()
@@ -115,7 +115,7 @@ func ProcessD2oFile(d2oFilePath string) (Data, error) {
 		objects = append(objects, object)
 	}
 
-	return Data{
+	return D2oData{
 		Classes: classTable,
 		Objects: objects,
 	}, nil
@@ -170,6 +170,7 @@ func readField(dataInput *DataInput) GameDataField {
 
 func readObject(dataInput *DataInput, classeTable map[int]Class, class Class) Object {
 	object := map[string]any{}
+	object["ClassType_"] = class.PackageClass
 
 	slog.Debug("reading object", "class", fmt.Sprintf("%s.%s", class.PackageName, class.PackageClass), "field count", len(class.Fields), "offset", dataInput.OffsetStr())
 	for _, field := range class.Fields {
