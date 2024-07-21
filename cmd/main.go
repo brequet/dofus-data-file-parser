@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/brequet/dofus-data-file-parser/internal/generator"
-	"github.com/brequet/dofus-data-file-parser/internal/parser"
+	"github.com/brequet/dofus-data-file-parser/pkg/generator"
+	"github.com/brequet/dofus-data-file-parser/pkg/parser"
 )
 
 func main() {

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"go/format"
 
-	"github.com/brequet/dofus-data-file-parser/internal/parser"
+	"github.com/brequet/dofus-data-file-parser/pkg/parser"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
